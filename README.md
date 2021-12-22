@@ -1,4 +1,4 @@
-# nutriscore
+# nutriscore [![Go Reference](https://pkg.go.dev/badge/github.com/aquilax/nutriscore.svg)](https://pkg.go.dev/github.com/aquilax/nutriscore)
 
 Go library for calculating the Nutri-Score
 

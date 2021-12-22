@@ -1,5 +1,5 @@
 // Package nutriscore provides utilities for calculating nutritional score and
-// Nutri-Score
+// Nutri-Score.
 // More about-score: https://en.wikipedia.org/wiki/Nutri-Score
 package nutriscore
 
@@ -19,6 +19,9 @@ var saturatedFattyAcidsLevels = []float64{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
 var sodiumLevels = []float64{900, 810, 720, 630, 540, 450, 360, 270, 180, 90}
 var fibreLevels = []float64{4.7, 3.7, 2.8, 1.9, 0.9}
 var proteinLevels = []float64{8, 6.4, 4.8, 3.2, 1.6}
+
+var energyLevelsBeverage = []float64{270, 240, 210, 180, 150, 120, 90, 60, 30, 0}
+var sugarsLevelsBeverage = []float64{13.5, 12, 10.5, 9, 7.5, 6, 4.5, 3, 1.5, 0}
 
 // NutritionalScore contains the numeric nutritional score value and type of product
 type NutritionalScore struct {
@@ -59,27 +62,43 @@ func SodiumFromSalt(saltMg float64) SodiumMilligram {
 }
 
 // GetPoints returns the nutritional score
-func (e EnergyKJ) GetPoints() int {
+func (e EnergyKJ) GetPoints(st ScoreType) int {
+	if st == Beverage {
+		return getPointsFromRange(float64(e), energyLevelsBeverage)
+	}
 	return getPointsFromRange(float64(e), energyLevels)
 }
 
 // GetPoints returns the nutritional score
-func (s SugarGram) GetPoints() int {
+func (s SugarGram) GetPoints(st ScoreType) int {
+	if st == Beverage {
+		return getPointsFromRange(float64(s), sugarsLevelsBeverage)
+	}
 	return getPointsFromRange(float64(s), sugarsLevels)
 }
 
 // GetPoints returns the nutritional score
-func (sfa SaturatedFattyAcidsGram) GetPoints() int {
+func (sfa SaturatedFattyAcidsGram) GetPoints(st ScoreType) int {
 	return getPointsFromRange(float64(sfa), saturatedFattyAcidsLevels)
 }
 
 // GetPoints returns the nutritional score
-func (s SodiumMilligram) GetPoints() int {
+func (s SodiumMilligram) GetPoints(st ScoreType) int {
 	return getPointsFromRange(float64(s), sodiumLevels)
 }
 
 // GetPoints returns the nutritional score
-func (f FruitsPercent) GetPoints() int {
+func (f FruitsPercent) GetPoints(st ScoreType) int {
+	if st == Beverage {
+		if f > 80 {
+			return 10
+		} else if f > 60 {
+			return 4
+		} else if f > 40 {
+			return 2
+		}
+		return 0
+	}
 	if f > 80 {
 		return 5
 	} else if f > 60 {
@@ -91,12 +110,12 @@ func (f FruitsPercent) GetPoints() int {
 }
 
 // GetPoints returns the nutritional score
-func (f FibreGram) GetPoints() int {
+func (f FibreGram) GetPoints(st ScoreType) int {
 	return getPointsFromRange(float64(f), fibreLevels)
 }
 
 // GetPoints returns the nutritional score
-func (p ProteinGram) GetPoints() int {
+func (p ProteinGram) GetPoints(st ScoreType) int {
 	return getPointsFromRange(float64(p), proteinLevels)
 }
 
@@ -113,13 +132,10 @@ type NutritionalData struct {
 
 // GetNutritionalScore calculates the nutritional score for nutritional data n of type st
 func GetNutritionalScore(n NutritionalData, st ScoreType) NutritionalScore {
-	if st != Food {
-		panic("not implemented")
-	}
-	fruitPoints := n.Fruits.GetPoints()
-	fibrePoints := n.Fibre.GetPoints()
-	negative := n.Energy.GetPoints() + n.Sugars.GetPoints() + n.SaturatedFattyAcids.GetPoints() + n.Sodium.GetPoints()
-	positive := fruitPoints + fibrePoints + n.Protein.GetPoints()
+	fruitPoints := n.Fruits.GetPoints(st)
+	fibrePoints := n.Fibre.GetPoints(st)
+	negative := n.Energy.GetPoints(st) + n.Sugars.GetPoints(st) + n.SaturatedFattyAcids.GetPoints(st) + n.Sodium.GetPoints(st)
+	positive := fruitPoints + fibrePoints + n.Protein.GetPoints(st)
 
 	if negative >= 11 && fruitPoints < 5 {
 		return NutritionalScore{negative - fibrePoints - fruitPoints, st}
