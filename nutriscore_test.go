@@ -17,6 +17,17 @@ func TestGetNutritionalScore(t *testing.T) {
 		wantScore string
 	}{
 		{
+			"water",
+			args{
+				NutritionalData{
+					IsWater: true,
+				},
+				Beverage,
+			},
+			NutritionalScore{0, Beverage, true},
+			"A",
+		},
+		{
 			"calculates nutritional score",
 			args{
 				NutritionalData{
@@ -30,7 +41,7 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{2, Food},
+			NutritionalScore{2, Food, false},
 			"B",
 		},
 		{
@@ -47,7 +58,7 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{0, Food},
+			NutritionalScore{0, Food, false},
 			"B",
 		},
 		{
@@ -64,7 +75,7 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{12, Food},
+			NutritionalScore{12, Food, false},
 			"D",
 		},
 		{
@@ -81,30 +92,13 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{6, Food},
+			NutritionalScore{6, Food, false},
 			"C",
-		},
-		{
-			"worked example 6 from 'Nutrient Profiling Technical Guidance January 2011'",
-			args{
-				NutritionalData{
-					Energy:              EnergyKJ(184),
-					Sugars:              SugarGram(10.3),
-					SaturatedFattyAcids: SaturatedFattyAcidsGram(0),
-					Sodium:              SodiumMilligram(0),
-					Fruits:              FruitsPercent(15),
-					Fibre:               FibreGram(0),
-					Protein:             ProteinGram(0.1),
-				},
-				Beverage,
-			},
-			NutritionalScore{2, Food},
-			"B",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GetNutritionalScore(tt.args.n, Food)
+			got := GetNutritionalScore(tt.args.n, tt.args.st)
 			if got != tt.want {
 				t.Errorf("GetNutritionalScore() = %v, want %v", got, tt.want)
 			}
