@@ -11,6 +11,10 @@ const (
 	Food ScoreType = iota
 	// Beverage is used when calculating nutritional score for beverages
 	Beverage
+	// Water is used when calculating nutritional score for water
+	Water
+	// Cheese is used for calculating the nutritional score for cheeses
+	Cheese
 )
 
 var scoreToLetter = []string{"A", "B", "C", "D", "E"}
@@ -28,8 +32,9 @@ var sugarsLevelsBeverage = []float64{13.5, 12, 10.5, 9, 7.5, 6, 4.5, 3, 1.5, 0}
 // NutritionalScore contains the numeric nutritional score value and type of product
 type NutritionalScore struct {
 	Value     int
+	Positive  int
+	Negative  int
 	ScoreType ScoreType
-	IsWater   bool
 }
 
 // EnergyKJ represents the energy density in kJ/100g
@@ -136,18 +141,34 @@ type NutritionalData struct {
 
 // GetNutritionalScore calculates the nutritional score for nutritional data n of type st
 func GetNutritionalScore(n NutritionalData, st ScoreType) NutritionalScore {
-	if n.IsWater && st == Beverage {
-		return NutritionalScore{0, st, true}
-	}
-	fruitPoints := n.Fruits.GetPoints(st)
-	fibrePoints := n.Fibre.GetPoints(st)
-	negative := n.Energy.GetPoints(st) + n.Sugars.GetPoints(st) + n.SaturatedFattyAcids.GetPoints(st) + n.Sodium.GetPoints(st)
-	positive := fruitPoints + fibrePoints + n.Protein.GetPoints(st)
+	value := 0
+	positive := 0
+	negative := 0
+	// Water is always graded A page 30
+	if st != Water {
+		fruitPoints := n.Fruits.GetPoints(st)
+		fibrePoints := n.Fibre.GetPoints(st)
+		negative = n.Energy.GetPoints(st) + n.Sugars.GetPoints(st) + n.SaturatedFattyAcids.GetPoints(st) + n.Sodium.GetPoints(st)
+		positive = fruitPoints + fibrePoints + n.Protein.GetPoints(st)
 
-	if negative >= 11 && fruitPoints < 5 {
-		return NutritionalScore{negative - fibrePoints - fruitPoints, st, false}
+		if st == Cheese {
+			// Cheeses always use (negative - positive) page 29
+			value = negative - positive
+		} else {
+			// page 27
+			if negative >= 11 && fruitPoints < 5 {
+				value = negative - fibrePoints - fruitPoints
+			} else {
+				value = negative - positive
+			}
+		}
 	}
-	return NutritionalScore{negative - positive, st, false}
+	return NutritionalScore{
+		Value:     value,
+		Positive:  positive,
+		Negative:  negative,
+		ScoreType: st,
+	}
 }
 
 // GetNutriScore returns the Nutri-Score rating
@@ -155,7 +176,7 @@ func (ns NutritionalScore) GetNutriScore() string {
 	if ns.ScoreType == Food {
 		return scoreToLetter[getPointsFromRange(float64(ns.Value), []float64{18, 10, 2, -1})]
 	}
-	if ns.ScoreType == Beverage && ns.IsWater {
+	if ns.ScoreType == Water {
 		return scoreToLetter[0]
 	}
 	return scoreToLetter[getPointsFromRange(float64(ns.Value), []float64{9, 5, 1, -2})]

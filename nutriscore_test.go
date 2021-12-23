@@ -1,9 +1,15 @@
 package nutriscore
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
+
+func pp(i interface{}) string {
+	s, _ := json.MarshalIndent(i, "", "\t")
+	return string(s)
+}
 
 func TestGetNutritionalScore(t *testing.T) {
 	type args struct {
@@ -22,10 +28,28 @@ func TestGetNutritionalScore(t *testing.T) {
 				NutritionalData{
 					IsWater: true,
 				},
-				Beverage,
+				Water,
 			},
-			NutritionalScore{0, Beverage, true},
+			NutritionalScore{0, 0, 0, Water},
 			"A",
+		},
+		{
+			// https://world.openfoodfacts.org/product/4550002874414/pumpkin-chips-muji
+			"pumpkin chips",
+			args{
+				NutritionalData{
+					Energy:              EnergyKJ(2132),
+					Sugars:              SugarGram(30),
+					SaturatedFattyAcids: SaturatedFattyAcidsGram(9.6),
+					Sodium:              SodiumMilligram(160),
+					Fruits:              FruitsPercent(88.9),
+					Fibre:               FibreGram(7.8),
+					Protein:             ProteinGram(3.5),
+				},
+				Food,
+			},
+			NutritionalScore{10, 12, 22, Food},
+			"C",
 		},
 		{
 			"calculates nutritional score",
@@ -41,7 +65,7 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{2, Food, false},
+			NutritionalScore{2, 6, 8, Food},
 			"B",
 		},
 		{
@@ -58,7 +82,7 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{0, Food, false},
+			NutritionalScore{0, 4, 4, Food},
 			"B",
 		},
 		{
@@ -75,7 +99,7 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{12, Food, false},
+			NutritionalScore{12, 2, 12, Food},
 			"D",
 		},
 		{
@@ -92,7 +116,7 @@ func TestGetNutritionalScore(t *testing.T) {
 				},
 				Food,
 			},
-			NutritionalScore{6, Food, false},
+			NutritionalScore{6, 8, 12, Food},
 			"C",
 		},
 	}
@@ -100,7 +124,7 @@ func TestGetNutritionalScore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := GetNutritionalScore(tt.args.n, tt.args.st)
 			if got != tt.want {
-				t.Errorf("GetNutritionalScore() = %v, want %v", got, tt.want)
+				t.Errorf("GetNutritionalScore() = \n%+v\n, want \n%+v", pp(got), pp(tt.want))
 			}
 			if gotScore := got.GetNutriScore(); gotScore != tt.wantScore {
 				t.Errorf("GetNutriScore() = %v, want %v", gotScore, tt.wantScore)
